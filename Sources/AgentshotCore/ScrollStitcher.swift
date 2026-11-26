@@ -129,8 +129,8 @@ public enum ScrollStitcher {
         let height = min(previous.height, next.height)
         guard width > 8, height > 20 else { return nil }
 
-        let minimum = max(8, height / 20)
-        let maximum = height - 1
+        let minimum = 1
+        let maximum = height
         let xStride = max(1, width / 72)
         var bestOverlap = minimum
         var bestError = Double.greatestFiniteMagnitude

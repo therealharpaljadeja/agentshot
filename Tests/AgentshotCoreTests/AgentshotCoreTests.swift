@@ -85,6 +85,26 @@ final class AgentshotCoreTests: XCTestCase {
         XCTAssertEqual(result.confidence.first ?? 0, 1, accuracy: 0.05)
     }
 
+    func testScrollStitcherFindsSmallOverlapAfterLargeScroll() throws {
+        let width = 24
+        let height = 40
+        let shift = 37
+        let first = try XCTUnwrap(makeStripedFrame(width: width, height: height, startRow: 0))
+        let second = try XCTUnwrap(makeStripedFrame(width: width, height: height, startRow: shift))
+        let result = try ScrollStitcher.stitch(images: [first, second])
+        XCTAssertEqual(result.overlaps, [height - shift])
+        XCTAssertEqual(result.image.height, height + shift)
+    }
+
+    func testScrollStitcherDoesNotDuplicateUnchangedFrame() throws {
+        let first = try XCTUnwrap(makeStripedFrame(width: 24, height: 40, startRow: 0))
+        let second = try XCTUnwrap(makeStripedFrame(width: 24, height: 40, startRow: 0))
+        let result = try ScrollStitcher.stitch(images: [first, second])
+        XCTAssertEqual(result.overlaps, [40])
+        XCTAssertEqual(result.image.height, 40)
+        XCTAssertTrue(result.warnings.contains("duplicate-frame-skipped"))
+    }
+
     func testMCPFrameExtraction() throws {
         let body = #"{"jsonrpc":"2.0","id":1,"method":"ping"}"#.data(using: .utf8)!
         var frame = "Content-Length: \(body.count)\r\n\r\n".data(using: .utf8)!
