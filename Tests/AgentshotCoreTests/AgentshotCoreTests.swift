@@ -142,6 +142,16 @@ final class AgentshotCoreTests: XCTestCase {
         XCTAssertEqual(bitmap.sample(x: 0, visualTopRow: 3).0, 27)
     }
 
+    func testBeautifyRejectsNonFinitePadding() throws {
+        let image = try XCTUnwrap(makeSolidImage(width: 20, height: 20, red: 255, green: 255, blue: 255))
+        XCTAssertThrowsError(try Beautifier.beautify(image: image, options: BeautifyOptions(padding: .nan))) { error in
+            XCTAssertEqual((error as? AgentshotError)?.code, "invalid-beautify-options")
+        }
+        XCTAssertThrowsError(try Beautifier.beautify(image: image, options: BeautifyOptions(padding: .infinity))) { error in
+            XCTAssertEqual((error as? AgentshotError)?.code, "invalid-beautify-options")
+        }
+    }
+
     func testReadCGImageAppliesEXIFOrientation() throws {
         let image = try XCTUnwrap(makeStripedFrame(width: 2, height: 3, startRow: 0))
         let url = FileManager.default.temporaryDirectory.appendingPathComponent("agentshot-oriented-\(UUID().uuidString).jpg")

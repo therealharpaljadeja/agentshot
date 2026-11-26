@@ -20,8 +20,18 @@ public struct BeautifyOptions: Sendable {
 
 public enum Beautifier {
     public static func beautify(image: CGImage, options: BeautifyOptions) throws -> CGImage {
-        let width = image.width + Int(options.padding * 2)
-        let height = image.height + Int(options.padding * 2)
+        guard options.padding.isFinite, options.radius.isFinite, options.shadowOpacity.isFinite, options.shadowBlur.isFinite,
+              options.padding >= 0, options.radius >= 0, options.shadowOpacity >= 0, options.shadowBlur >= 0 else {
+            throw AgentshotError("invalid-beautify-options", "Padding, radius, shadow opacity, and shadow blur must be finite non-negative numbers")
+        }
+        let paddingPixels = options.padding * 2
+        guard paddingPixels.isFinite,
+              paddingPixels <= CGFloat(Int.max - image.width),
+              paddingPixels <= CGFloat(Int.max - image.height) else {
+            throw AgentshotError("invalid-beautify-options", "Padding is too large for the input image")
+        }
+        let width = image.width + Int(paddingPixels)
+        let height = image.height + Int(paddingPixels)
         guard let context = makeBitmapContext(width: width, height: height) else {
             throw AgentshotError("render-failed", "Could not create beautify rendering context")
         }
