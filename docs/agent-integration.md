@@ -23,6 +23,8 @@ Important model of scrolling capture: **agentshot does not scroll the screen**. 
 
 ## 2. Build and install once on macOS
 
+There is currently no `.dmg`, `.zip`, installer, or GUI app. `agentshot` is distributed as source and installed as a local command-line binary. A `.dmg` would mainly make sense for a GUI `.app`; this project is currently a CLI/MCP server.
+
 Clone and build a release binary:
 
 ```bash
