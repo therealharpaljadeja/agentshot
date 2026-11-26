@@ -15,7 +15,11 @@ public enum ScrollSessionStore {
         if FileManager.default.fileExists(atPath: url.path) {
             throw AgentshotError("session-exists", "Scrolling capture session '\(id)' already exists")
         }
-        try FileManager.default.createDirectory(at: url.appendingPathComponent("frames", isDirectory: true), withIntermediateDirectories: true)
+        let framesURL = url.appendingPathComponent("frames", isDirectory: true)
+        try FileManager.default.createDirectory(at: framesURL, withIntermediateDirectories: true, attributes: [.posixPermissions: 0o700])
+        for directory in [root.deletingLastPathComponent(), root, url, framesURL] {
+            try FileManager.default.setAttributes([.posixPermissions: 0o700], ofItemAtPath: directory.path)
+        }
         let metadata: [String: Any] = [
             "id": id,
             "rect": [rect.origin.x, rect.origin.y, rect.width, rect.height],
@@ -24,7 +28,9 @@ public enum ScrollSessionStore {
             "createdAt": ISO8601DateFormatter().string(from: Date())
         ]
         let data = try JSONSerialization.data(withJSONObject: metadata, options: [.prettyPrinted, .sortedKeys])
-        try data.write(to: url.appendingPathComponent("session.json"))
+        let metadataURL = url.appendingPathComponent("session.json")
+        try data.write(to: metadataURL)
+        try FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: metadataURL.path)
         return id
     }
 
@@ -61,6 +67,7 @@ public enum ScrollSessionStore {
         let index = existing.count + 1
         let url = framesURL.appendingPathComponent(String(format: "frame-%04d.png", index))
         try writeCGImage(image, to: url, format: .png)
+        try FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: url.path)
         return (index, url)
     }
 
