@@ -138,6 +138,8 @@ Session frames are stored under `~/.agentshot/sessions/<id>/` so sessions can sp
 
 ## MCP server
 
+For detailed per-agent setup, configuration examples, workflows, and troubleshooting, see [docs/agent-integration.md](docs/agent-integration.md).
+
 Start the experimental stdio MCP server:
 
 ```bash
