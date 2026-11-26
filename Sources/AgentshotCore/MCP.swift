@@ -12,18 +12,26 @@ public final class MCPServer: @unchecked Sendable {
             let chunk = input.readData(ofLength: 4096)
             if chunk.isEmpty { break }
             buffer.append(chunk)
-            while let message = MCPFraming.extract(from: &buffer) {
-                if let response = await handle(message) {
-                    write(response)
+            while let frame = MCPFraming.extractFrame(from: &buffer) {
+                if let response = await handle(frame.message) {
+                    write(response, format: frame.format)
                 }
             }
         }
     }
 
-    private func write(_ object: [String: Any]) {
-        guard var body = try? JSONSerialization.data(withJSONObject: object, options: [.sortedKeys]) else { return }
-        body.append(0x0a)
-        output.write(body)
+    private func write(_ object: [String: Any], format: MCPFrameFormat) {
+        guard let body = try? JSONSerialization.data(withJSONObject: object, options: [.sortedKeys]) else { return }
+        switch format {
+        case .newline:
+            var line = body
+            line.append(0x0a)
+            output.write(line)
+        case .contentLength:
+            var frame = "Content-Length: \(body.count)\r\n\r\n".data(using: .utf8) ?? Data()
+            frame.append(body)
+            output.write(frame)
+        }
     }
 
     private func handle(_ object: [String: Any]) async -> [String: Any]? {
@@ -156,8 +164,22 @@ public final class MCPServer: @unchecked Sendable {
     }
 }
 
+public enum MCPFrameFormat {
+    case newline
+    case contentLength
+}
+
+public struct MCPFrame {
+    public let message: [String: Any]
+    public let format: MCPFrameFormat
+}
+
 public enum MCPFraming {
     public static func extract(from buffer: inout Data) -> [String: Any]? {
+        extractFrame(from: &buffer)?.message
+    }
+
+    public static func extractFrame(from buffer: inout Data) -> MCPFrame? {
         guard !buffer.isEmpty else { return nil }
         if startsWithContentLengthHeader(buffer) {
             return extractHeaderFrame(from: &buffer)
@@ -177,16 +199,17 @@ public enum MCPFraming {
         return "content-length:".hasPrefix(prefix)
     }
 
-    private static func extractNewlineFrame(from buffer: inout Data) -> [String: Any]? {
+    private static func extractNewlineFrame(from buffer: inout Data) -> MCPFrame? {
         guard let newline = buffer.firstIndex(of: 0x0a) else { return nil }
         var body = buffer.subdata(in: 0..<newline)
         buffer.removeSubrange(0...newline)
         if body.last == 0x0d { body.removeLast() }
-        guard !body.isEmpty else { return extract(from: &buffer) }
-        return try? JSONSerialization.jsonObject(with: body) as? [String: Any]
+        guard !body.isEmpty else { return extractFrame(from: &buffer) }
+        guard let object = try? JSONSerialization.jsonObject(with: body) as? [String: Any] else { return nil }
+        return MCPFrame(message: object, format: .newline)
     }
 
-    private static func extractHeaderFrame(from buffer: inout Data) -> [String: Any]? {
+    private static func extractHeaderFrame(from buffer: inout Data) -> MCPFrame? {
         guard let headerEnd = buffer.range(of: Data("\r\n\r\n".utf8)) else { return nil }
         let headerData = buffer.subdata(in: 0..<headerEnd.lowerBound)
         guard let header = String(data: headerData, encoding: .utf8) else { return nil }
@@ -202,7 +225,8 @@ public enum MCPFraming {
         guard buffer.count >= frameEnd else { return nil }
         let body = buffer.subdata(in: headerEnd.upperBound..<frameEnd)
         buffer.removeSubrange(0..<frameEnd)
-        return try? JSONSerialization.jsonObject(with: body) as? [String: Any]
+        guard let object = try? JSONSerialization.jsonObject(with: body) as? [String: Any] else { return nil }
+        return MCPFrame(message: object, format: .contentLength)
     }
 }
 
