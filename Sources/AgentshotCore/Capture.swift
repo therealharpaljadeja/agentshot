@@ -26,37 +26,37 @@ public struct CaptureResult: Sendable {
 
 final class OneShotFrameOutput: NSObject, SCStreamOutput, @unchecked Sendable {
     private let lock = NSLock()
-    private var continuation: CheckedContinuation<UnsafeSendableBox<CVPixelBuffer>, Error>?
+    private let semaphore = DispatchSemaphore(value: 0)
+    private var firstFrame: CVPixelBuffer?
 
-    func nextFrame() async throws -> UnsafeSendableBox<CVPixelBuffer> {
-        try await withCheckedThrowingContinuation { continuation in
-            lock.lock()
-            self.continuation = continuation
+    func nextFrame(timeoutSeconds: TimeInterval = 5) throws -> UnsafeSendableBox<CVPixelBuffer> {
+        lock.lock()
+        if let firstFrame {
             lock.unlock()
-            DispatchQueue.global().asyncAfter(deadline: .now() + 5) { [weak self] in
-                guard let self else { return }
-                self.lock.lock()
-                guard let pending = self.continuation else {
-                    self.lock.unlock()
-                    return
-                }
-                self.continuation = nil
-                self.lock.unlock()
-                pending.resume(throwing: AgentshotError("capture-timeout", "Timed out waiting for the first screen frame"))
-            }
+            return UnsafeSendableBox(value: firstFrame)
         }
+        lock.unlock()
+
+        guard semaphore.wait(timeout: .now() + timeoutSeconds) == .success else {
+            throw AgentshotError("capture-timeout", "Timed out waiting for the first screen frame")
+        }
+
+        lock.lock()
+        defer { lock.unlock() }
+        guard let firstFrame else {
+            throw AgentshotError("capture-frame-missing", "Capture signaled completion without a frame")
+        }
+        return UnsafeSendableBox(value: firstFrame)
     }
 
     func stream(_ stream: SCStream, didOutputSampleBuffer sampleBuffer: CMSampleBuffer, of type: SCStreamOutputType) {
         guard type == .screen, let pixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) else { return }
         lock.lock()
-        guard let continuation else {
-            lock.unlock()
-            return
+        if firstFrame == nil {
+            firstFrame = pixelBuffer
+            semaphore.signal()
         }
-        self.continuation = nil
         lock.unlock()
-        continuation.resume(returning: UnsafeSendableBox(value: pixelBuffer))
     }
 }
 
@@ -97,7 +97,7 @@ public enum CaptureService {
         let stream = SCStream(filter: filter, configuration: configuration, delegate: nil)
         try stream.addStreamOutput(output, type: .screen, sampleHandlerQueue: queue)
         try await stream.startCapture()
-        let pixelBuffer = (try await output.nextFrame()).value
+        let pixelBuffer = try output.nextFrame().value
         try await stream.stopCapture()
 
         var cgImage: CGImage?
