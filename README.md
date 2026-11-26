@@ -19,6 +19,32 @@ Early MVP. macOS-only. The implemented surface includes:
 
 Automatic synthetic scrolling, window targeting, pinning, uploads, human editor UI, magnifier, spotlight, freehand drawing, image overlays, QR recognition, and compare helpers are intentionally outside the MVP.
 
+## Installation
+
+There is currently no `.dmg`, `.zip`, installer, or GUI app. `agentshot` is a macOS command-line tool and MCP server, so the current installation path is to build the executable from source and copy it to a stable location.
+
+Requires a macOS machine with Xcode or the Swift toolchain installed.
+
+```bash
+git clone git@github.com:therealharpaljadeja/agentshot.git
+cd agentshot
+swift build -c release
+mkdir -p "$HOME/.local/bin"
+cp .build/release/agentshot "$HOME/.local/bin/agentshot"
+"$HOME/.local/bin/agentshot" doctor
+```
+
+Use the resulting absolute path in MCP configuration, for example `/Users/yourname/.local/bin/agentshot`. Do not rely on `~`, `$HOME`, or PATH expansion inside agent MCP config files.
+
+For a system-wide install instead:
+
+```bash
+sudo cp .build/release/agentshot /usr/local/bin/agentshot
+/usr/local/bin/agentshot doctor
+```
+
+A `.dmg` is not a natural fit because there is no GUI `.app` to drag into Applications. A downloadable zip/Homebrew formula can be added later if we decide to distribute signed binaries; building locally is currently the reliable path. See [docs/agent-integration.md](docs/agent-integration.md) for detailed agent-specific setup.
+
 ## Build and test
 
 Requires a macOS machine with Xcode/Swift installed.
