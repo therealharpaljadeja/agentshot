@@ -86,8 +86,7 @@ public enum RedactionService {
                 let expanded = line.rect.insetBy(dx: -padding, dy: -padding).integral
                 rects.append(expanded)
                 matches.append([
-                    "line": line.text,
-                    "matches": found.compactMap { Range($0.range, in: line.text).map { String(line.text[$0]) } },
+                    "matchCount": found.count,
                     "rect": [
                         "x": expanded.origin.x,
                         "y": expanded.origin.y,

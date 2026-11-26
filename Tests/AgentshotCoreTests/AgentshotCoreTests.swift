@@ -87,6 +87,9 @@ final class AgentshotCoreTests: XCTestCase {
         XCTAssertEqual(result.matches.count, 1)
         XCTAssertEqual(result.rects[0].origin.x, 7)
         XCTAssertEqual(result.rects[0].origin.y, 17)
+        XCTAssertEqual(result.matches[0]["matchCount"] as? Int, 1)
+        XCTAssertNil(result.matches[0]["line"])
+        XCTAssertNil(result.matches[0]["matches"])
     }
 
 
