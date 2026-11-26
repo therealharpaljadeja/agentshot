@@ -27,10 +27,11 @@ There is no `.dmg` or GUI app. `agentshot` is a CLI/MCP server, so Homebrew is t
 
 ```bash
 brew tap therealharpaljadeja/agentshot https://github.com/therealharpaljadeja/agentshot.git
+brew trust --tap therealharpaljadeja/agentshot
 brew install agentshot
 ```
 
-The explicit tap URL is required because this repository is both the project repository and its own Homebrew tap. The formula installs a prebuilt universal macOS binary supporting Apple silicon and Intel Macs running macOS 14 Sonoma or newer.
+The explicit tap URL is required because this repository is both the project repository and its own Homebrew tap. Homebrew also requires third-party taps to be explicitly trusted before their formulae can be installed. The formula installs a prebuilt universal macOS binary supporting Apple silicon and Intel Macs running macOS 14 Sonoma or newer.
 
 Homebrew installs the executable at `$(brew --prefix)/bin/agentshot`:
 
