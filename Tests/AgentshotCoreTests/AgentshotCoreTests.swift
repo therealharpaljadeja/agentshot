@@ -142,6 +142,21 @@ final class AgentshotCoreTests: XCTestCase {
         XCTAssertEqual(bitmap.sample(x: 0, visualTopRow: 3).0, 27)
     }
 
+    func testReadCGImageAppliesEXIFOrientation() throws {
+        let image = try XCTUnwrap(makeStripedFrame(width: 2, height: 3, startRow: 0))
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent("agentshot-oriented-\(UUID().uuidString).jpg")
+        defer { try? FileManager.default.removeItem(at: url) }
+        guard let destination = CGImageDestinationCreateWithURL(url as CFURL, "public.jpeg" as CFString, 1, nil) else {
+            return XCTFail("Could not create test JPEG destination")
+        }
+        CGImageDestinationAddImage(destination, image, [kCGImagePropertyOrientation: 6] as CFDictionary)
+        XCTAssertTrue(CGImageDestinationFinalize(destination))
+
+        let oriented = try readCGImage(url)
+        XCTAssertEqual(oriented.width, 3)
+        XCTAssertEqual(oriented.height, 2)
+    }
+
     private func makeSolidImage(width: Int, height: Int, red: UInt8, green: UInt8, blue: UInt8) -> CGImage? {
         var bytes = [UInt8](repeating: 0, count: width * height * 4)
         for index in stride(from: 0, to: bytes.count, by: 4) {

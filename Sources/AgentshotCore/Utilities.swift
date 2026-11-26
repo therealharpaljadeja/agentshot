@@ -101,7 +101,20 @@ public func readCGImage(_ url: URL) throws -> CGImage {
           let image = CGImageSourceCreateImageAtIndex(source, 0, nil) else {
         throw AgentshotError("image-read-failed", "Could not read image at \(url.path)")
     }
-    return image
+
+    guard let properties = CGImageSourceCopyPropertiesAtIndex(source, 0, nil) as? [CFString: Any],
+          let orientation = (properties[kCGImagePropertyOrientation] as? NSNumber)?.intValue,
+          orientation > 1 else {
+        return image
+    }
+
+    let options: [CFString: Any] = [
+        kCGImageSourceCreateThumbnailFromImageAlways: true,
+        kCGImageSourceCreateThumbnailWithTransform: true,
+        kCGImageSourceThumbnailMaxPixelSize: max(image.width, image.height),
+        kCGImageSourceShouldCache: false
+    ]
+    return CGImageSourceCreateThumbnailAtIndex(source, 0, options as CFDictionary) ?? image
 }
 
 public func parseRect(_ string: String) throws -> CGRect {
