@@ -21,10 +21,9 @@ public final class MCPServer: @unchecked Sendable {
     }
 
     private func write(_ object: [String: Any]) {
-        guard let body = try? JSONSerialization.data(withJSONObject: object, options: [.sortedKeys]) else { return }
-        var header = "Content-Length: \(body.count)\r\n\r\n".data(using: .utf8) ?? Data()
-        header.append(body)
-        output.write(header)
+        guard var body = try? JSONSerialization.data(withJSONObject: object, options: [.sortedKeys]) else { return }
+        body.append(0x0a)
+        output.write(body)
     }
 
     private func handle(_ object: [String: Any]) async -> [String: Any]? {
@@ -153,6 +152,35 @@ public final class MCPServer: @unchecked Sendable {
 
 public enum MCPFraming {
     public static func extract(from buffer: inout Data) -> [String: Any]? {
+        guard !buffer.isEmpty else { return nil }
+        if startsWithContentLengthHeader(buffer) {
+            return extractHeaderFrame(from: &buffer)
+        }
+        if couldBePartialContentLengthHeader(buffer) {
+            return nil
+        }
+        return extractNewlineFrame(from: &buffer)
+    }
+
+    private static func startsWithContentLengthHeader(_ buffer: Data) -> Bool {
+        String(data: buffer.prefix(15), encoding: .utf8)?.lowercased() == "content-length:"
+    }
+
+    private static func couldBePartialContentLengthHeader(_ buffer: Data) -> Bool {
+        guard let prefix = String(data: buffer.prefix(15), encoding: .utf8)?.lowercased(), prefix.count < 15 else { return false }
+        return "content-length:".hasPrefix(prefix)
+    }
+
+    private static func extractNewlineFrame(from buffer: inout Data) -> [String: Any]? {
+        guard let newline = buffer.firstIndex(of: 0x0a) else { return nil }
+        var body = buffer.subdata(in: 0..<newline)
+        buffer.removeSubrange(0...newline)
+        if body.last == 0x0d { body.removeLast() }
+        guard !body.isEmpty else { return extract(from: &buffer) }
+        return try? JSONSerialization.jsonObject(with: body) as? [String: Any]
+    }
+
+    private static func extractHeaderFrame(from buffer: inout Data) -> [String: Any]? {
         guard let headerEnd = buffer.range(of: Data("\r\n\r\n".utf8)) else { return nil }
         let headerData = buffer.subdata(in: 0..<headerEnd.lowerBound)
         guard let header = String(data: headerData, encoding: .utf8) else { return nil }

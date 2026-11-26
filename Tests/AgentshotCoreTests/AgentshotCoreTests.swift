@@ -80,6 +80,14 @@ final class AgentshotCoreTests: XCTestCase {
         XCTAssertEqual(frame.count, 0)
     }
 
+    func testMCPNewlineFrameExtraction() throws {
+        var frame = #"{"jsonrpc":"2.0","id":1,"method":"initialize"}"#.data(using: .utf8)!
+        frame.append(0x0a)
+        let message = MCPFraming.extract(from: &frame)
+        XCTAssertEqual(message?["method"] as? String, "initialize")
+        XCTAssertEqual(frame.count, 0)
+    }
+
     func testRegexRedactionRectsUseOCRLines() throws {
         let line = OCRLine(text: "token sk-test-123", confidence: 1, rect: CGRect(x: 10, y: 20, width: 100, height: 20))
         let result = try RedactionService.rectsMatchingRegex("sk-[a-z0-9-]+", in: [line], padding: 3)
