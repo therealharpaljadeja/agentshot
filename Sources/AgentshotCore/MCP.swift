@@ -93,6 +93,9 @@ public final class MCPServer: @unchecked Sendable {
             guard let array = arguments[key] as? [Double], array.count == 4 else {
                 throw AgentshotError("missing-argument", "Tool '\(name)' requires '\(key)' as x,y,width,height")
             }
+            guard array.allSatisfy(\.isFinite), array[2] > 0, array[3] > 0 else {
+                throw AgentshotError("invalid-rect", "Rectangle values must be finite and width/height must be positive")
+            }
             return CGRect(x: array[0], y: array[1], width: array[2], height: array[3])
         }
 
@@ -114,7 +117,10 @@ public final class MCPServer: @unchecked Sendable {
         case "redact":
             var rects: [CGRect] = []
             if let array = arguments["rects"] as? [[Double]] {
-                rects = array.compactMap { $0.count == 4 ? CGRect(x: $0[0], y: $0[1], width: $0[2], height: $0[3]) : nil }
+                rects = array.compactMap {
+                    guard $0.count == 4, $0.allSatisfy(\.isFinite), $0[2] > 0, $0[3] > 0 else { return nil }
+                    return CGRect(x: $0[0], y: $0[1], width: $0[2], height: $0[3])
+                }
             }
             return try AgentshotOperations.redact(
                 input: try url("input"),

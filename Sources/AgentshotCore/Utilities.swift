@@ -118,26 +118,34 @@ public func readCGImage(_ url: URL) throws -> CGImage {
 }
 
 public func parseRect(_ string: String) throws -> CGRect {
-    let parts = string.split(separator: ",").compactMap { Double($0.trimmingCharacters(in: .whitespaces)) }
-    guard parts.count == 4 else {
-        throw AgentshotError("invalid-rect", "Expected rect as x,y,width,height", recovery: "Example: --rect 100,200,800,600")
+    let rawParts = string.split(separator: ",", omittingEmptySubsequences: false)
+    guard rawParts.count == 4 else {
+        throw AgentshotError("invalid-rect", "Expected rect as exactly four numbers: x,y,width,height", recovery: "Example: --rect 100,200,800,600")
     }
-    guard parts[2] > 0, parts[3] > 0 else {
+    let parts = rawParts.map { Double($0.trimmingCharacters(in: .whitespaces)) }
+    guard let x = parts[0], let y = parts[1], let width = parts[2], let height = parts[3],
+          x.isFinite, y.isFinite, width.isFinite, height.isFinite else {
+        throw AgentshotError("invalid-rect", "Rectangle values must be finite numbers", recovery: "Example: --rect 100,200,800,600")
+    }
+    guard width > 0, height > 0 else {
         throw AgentshotError("invalid-rect", "Rectangle width and height must be positive")
     }
-    return CGRect(x: parts[0], y: parts[1], width: parts[2], height: parts[3])
+    return CGRect(x: x, y: y, width: width, height: height)
 }
 
 public func parsePointArray(_ value: Any?) -> CGPoint? {
     guard let array = value as? [Any], array.count == 2,
-          let x = number(array[0]), let y = number(array[1]) else { return nil }
+          let x = number(array[0]), let y = number(array[1]),
+          x.isFinite, y.isFinite else { return nil }
     return CGPoint(x: x, y: y)
 }
 
 public func parseRectArray(_ value: Any?) -> CGRect? {
     guard let array = value as? [Any], array.count == 4,
           let x = number(array[0]), let y = number(array[1]),
-          let width = number(array[2]), let height = number(array[3]) else { return nil }
+          let width = number(array[2]), let height = number(array[3]),
+          x.isFinite, y.isFinite, width.isFinite, height.isFinite,
+          width > 0, height > 0 else { return nil }
     return CGRect(x: x, y: y, width: width, height: height)
 }
 

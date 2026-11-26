@@ -7,6 +7,9 @@ final class AgentshotCoreTests: XCTestCase {
     func testParseRect() throws {
         let rect = try parseRect("10,20,300,400")
         XCTAssertEqual(rect, CGRect(x: 10, y: 20, width: 300, height: 400))
+        XCTAssertThrowsError(try parseRect("10,20,300,400,invalid"))
+        XCTAssertThrowsError(try parseRect("inf,20,300,400"))
+        XCTAssertThrowsError(try parseRect("10,20,nan,400"))
     }
 
     func testAnnotationRendererAddsCountersAndOperations() throws {
