@@ -68,9 +68,13 @@ public enum AnnotationRenderer {
             }
         }
 
+        var redactionApplied = 0
         let redactionOperations = operations.filter { ($0["type"] as? String) == "redact" }
         if !redactionOperations.isEmpty {
-            image = try applyRedactions(to: image, operations: redactionOperations)
+            let redactionResult = try applyRedactions(to: image, operations: redactionOperations)
+            image = redactionResult.image
+            warnings.append(contentsOf: redactionResult.warnings)
+            redactionApplied = redactionResult.applied
         }
 
         guard let context = makeBitmapContext(width: image.width, height: image.height) else {
@@ -78,7 +82,7 @@ public enum AnnotationRenderer {
         }
         context.draw(image, in: CGRect(x: 0, y: 0, width: image.width, height: image.height))
 
-        var applied = 0
+        var applied = redactionApplied
         var counter = 0
         let imageHeight = CGFloat(image.height)
 
@@ -169,20 +173,29 @@ public enum AnnotationRenderer {
         return AnnotationRenderResult(image: output, appliedOperations: applied, counterCount: counter, warnings: warnings)
     }
 
-    public static func applyRedactions(to image: CGImage, operations: [[String: Any]]) throws -> CGImage {
+    private static func applyRedactions(to image: CGImage, operations: [[String: Any]]) throws -> (image: CGImage, warnings: [String], applied: Int) {
         guard let context = makeBitmapContext(width: image.width, height: image.height) else {
             throw AgentshotError("render-failed", "Could not create redaction rendering context")
         }
         context.draw(image, in: CGRect(x: 0, y: 0, width: image.width, height: image.height))
-        for operation in operations {
-            guard let topLeftRect = parseRectArray(operation["rect"]) else { continue }
+        var warnings: [String] = []
+        var applied = 0
+        for (index, operation) in operations.enumerated() {
+            guard let topLeftRect = parseRectArray(operation["rect"]) else {
+                warnings.append("redaction-\(index + 1)-has-invalid-rect")
+                continue
+            }
             let method = (operation["method"] as? String ?? "blur").lowercased()
-            drawRedaction(in: context, image: image, topLeftRect: topLeftRect.integral, method: method)
+            if drawRedaction(in: context, image: image, topLeftRect: topLeftRect.integral, method: method) {
+                applied += 1
+            } else {
+                warnings.append("redaction-\(index + 1)-does-not-intersect-image")
+            }
         }
         guard let output = context.makeImage() else {
             throw AgentshotError("render-failed", "Could not produce redacted image")
         }
-        return output
+        return (output, warnings, applied)
     }
 
     public static func redactionOperations(rects: [CGRect], method: String) -> [[String: Any]] {
@@ -195,11 +208,11 @@ public enum AnnotationRenderer {
         }
     }
 
-    private static func drawRedaction(in context: CGContext, image: CGImage, topLeftRect: CGRect, method: String) {
+    private static func drawRedaction(in context: CGContext, image: CGImage, topLeftRect: CGRect, method: String) -> Bool {
         let bounds = CGRect(x: 0, y: 0, width: image.width, height: image.height)
         let clipped = topLeftRect.intersection(bounds).integral
+        guard clipped.width > 0, clipped.height > 0, let crop = image.cropping(to: clipped) else { return false }
         let drawRect = topLeftRectToCG(clipped, imageHeight: CGFloat(image.height)).integral
-        guard clipped.width > 0, clipped.height > 0, let crop = image.cropping(to: clipped) else { return }
 
         switch method {
         case "pixelate", "pixelate-text":
@@ -208,21 +221,27 @@ public enum AnnotationRenderer {
                 context.interpolationQuality = .none
                 context.draw(processed, in: drawRect)
                 context.restoreGState()
+                return true
             }
         case "erase", "erase-text", "inpaint":
             let color = averageColor(of: crop)
             context.setFillColor(color)
             context.fill(drawRect)
+            return true
         case "solid", "mask", "black":
             context.setFillColor(CGColor(red: 0, green: 0, blue: 0, alpha: 1))
             context.fill(drawRect)
+            return true
         default:
             if let processed = blurred(crop) {
                 context.draw(processed, in: drawRect)
+                return true
             } else if let processed = pixelated(crop) {
                 context.draw(processed, in: drawRect)
+                return true
             }
         }
+        return false
     }
 
     private static func blurred(_ image: CGImage) -> CGImage? {

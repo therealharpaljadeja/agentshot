@@ -56,6 +56,9 @@ public enum AgentshotOperations {
             throw AgentshotError("nothing-to-redact", "Provide at least one --rect or a --regex that matches OCR text")
         }
         let rendered = try RedactionService.redact(image: image, rects: allRects, method: method)
+        guard rendered.appliedOperations > 0 else {
+            throw AgentshotError("nothing-redacted", "No redaction rectangle intersects the input image")
+        }
         try writeCGImage(rendered.image, to: out)
         warnings.append(contentsOf: rendered.warnings)
         return [
@@ -63,7 +66,7 @@ public enum AgentshotOperations {
             "artifacts": [imageArtifact(out, width: rendered.image.width, height: rendered.image.height)],
             "redaction": [
                 "method": method,
-                "regions": allRects.count,
+                "regions": rendered.appliedOperations,
                 "regexMatches": matches
             ],
             "warnings": warnings

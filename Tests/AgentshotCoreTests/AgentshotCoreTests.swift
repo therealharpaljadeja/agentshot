@@ -58,6 +58,20 @@ final class AgentshotCoreTests: XCTestCase {
         XCTAssertEqual(bitmap.sample(x: 0, visualTopRow: 0).0, 9)
     }
 
+    func testOffImageRedactionWarnsAndDoesNotCount() throws {
+        let image = try XCTUnwrap(makeSolidImage(width: 100, height: 80, red: 255, green: 255, blue: 255))
+        let result = try RedactionService.redact(image: image, rects: [CGRect(x: 200, y: 200, width: 20, height: 20)], method: "solid")
+        XCTAssertEqual(result.appliedOperations, 0)
+        XCTAssertTrue(result.warnings.contains { $0.contains("does-not-intersect-image") })
+    }
+
+    func testValidRedactionCountsAsApplied() throws {
+        let image = try XCTUnwrap(makeSolidImage(width: 100, height: 80, red: 255, green: 255, blue: 255))
+        let result = try RedactionService.redact(image: image, rects: [CGRect(x: 10, y: 10, width: 20, height: 20)], method: "solid")
+        XCTAssertEqual(result.appliedOperations, 1)
+        XCTAssertTrue(result.warnings.isEmpty)
+    }
+
     func testScrollStitcherFindsVerticalOverlap() throws {
         let width = 24
         let height = 40
