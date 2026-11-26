@@ -149,7 +149,7 @@ public func parseRectArray(_ value: Any?) -> CGRect? {
     return CGRect(x: x, y: y, width: width, height: height)
 }
 
-public func number(_ value: Any) -> Double? {
+public func number(_ value: Any?) -> Double? {
     if let number = value as? NSNumber { return number.doubleValue }
     if let string = value as? String { return Double(string) }
     return nil

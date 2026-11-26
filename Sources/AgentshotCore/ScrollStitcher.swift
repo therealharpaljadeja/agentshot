@@ -67,7 +67,7 @@ struct RGBABitmap {
 
 public enum ScrollStitcher {
     public static func stitch(images: [CGImage]) throws -> StitchSummary {
-        guard var bitmaps = images.first.flatMap({ RGBABitmap(image: $0) }), !images.isEmpty else {
+        guard let bitmaps = images.first.flatMap({ RGBABitmap(image: $0) }), !images.isEmpty else {
             throw AgentshotError("nothing-to-stitch", "Scrolling capture session has no frames")
         }
         if images.count == 1 {
