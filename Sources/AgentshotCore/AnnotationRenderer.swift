@@ -17,6 +17,34 @@ public struct AnnotationRenderResult: Sendable {
     }
 }
 
+
+struct ArrowGeometry {
+    let shaftEnd: CGPoint
+    let headBaseLeading: CGPoint
+    let headBaseTrailing: CGPoint
+}
+
+func arrowGeometry(from start: CGPoint, to end: CGPoint, strokeWidth: CGFloat) -> ArrowGeometry {
+    let dx = end.x - start.x
+    let dy = end.y - start.y
+    let length = max(1, hypot(dx, dy))
+    let ux = dx / length
+    let uy = dy / length
+    let headLength = min(max(14, strokeWidth * 3), max(8, length * 0.8))
+    let headAngle = CGFloat.pi / 6
+    let baseDistance = headLength * cos(headAngle)
+    let baseCenter = CGPoint(x: end.x - ux * baseDistance, y: end.y - uy * baseDistance)
+    let shaftDistance = max(0, length - baseDistance)
+    let shaftEnd = CGPoint(x: start.x + ux * shaftDistance, y: start.y + uy * shaftDistance)
+    let halfWidth = headLength * sin(headAngle)
+    let perpendicular = CGPoint(x: -uy, y: ux)
+    return ArrowGeometry(
+        shaftEnd: shaftEnd,
+        headBaseLeading: CGPoint(x: baseCenter.x + perpendicular.x * halfWidth, y: baseCenter.y + perpendicular.y * halfWidth),
+        headBaseTrailing: CGPoint(x: baseCenter.x - perpendicular.x * halfWidth, y: baseCenter.y - perpendicular.y * halfWidth)
+    )
+}
+
 public enum AnnotationRenderer {
     public static func render(image input: CGImage, operationsJSON data: Data) throws -> AnnotationRenderResult {
         let object = try JSONSerialization.jsonObject(with: data)
@@ -97,22 +125,18 @@ public enum AnnotationRenderer {
                 let end = topLeftPointToCG(to, imageHeight: imageHeight)
                 let color = colorFromHex(operation["stroke"] as? String, fallback: .systemRed)
                 let width = CGFloat(number(operation["strokeWidth"]) ?? 6)
+                let geometry = arrowGeometry(from: start, to: end, strokeWidth: width)
                 context.setStrokeColor(cgColor(color))
                 context.setFillColor(cgColor(color))
                 context.setLineWidth(width)
                 context.setLineCap(.round)
                 context.move(to: start)
-                context.addLine(to: end)
+                context.addLine(to: geometry.shaftEnd)
                 context.strokePath()
 
-                let angle = atan2(end.y - start.y, end.x - start.x)
-                let headLength = max(14, width * 3)
-                let headAngle = CGFloat.pi / 7
-                let p1 = CGPoint(x: end.x - headLength * cos(angle - headAngle), y: end.y - headLength * sin(angle - headAngle))
-                let p2 = CGPoint(x: end.x - headLength * cos(angle + headAngle), y: end.y - headLength * sin(angle + headAngle))
                 context.move(to: end)
-                context.addLine(to: p1)
-                context.addLine(to: p2)
+                context.addLine(to: geometry.headBaseLeading)
+                context.addLine(to: geometry.headBaseTrailing)
                 context.closePath()
                 context.fillPath()
                 applied += 1

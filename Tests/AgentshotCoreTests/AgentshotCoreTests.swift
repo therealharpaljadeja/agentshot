@@ -27,6 +27,19 @@ final class AgentshotCoreTests: XCTestCase {
         XCTAssertTrue(result.warnings.isEmpty)
     }
 
+    func testArrowShaftStopsAtArrowheadBase() throws {
+        let geometry = arrowGeometry(
+            from: CGPoint(x: 100, y: 50),
+            to: CGPoint(x: 20, y: 50),
+            strokeWidth: 8
+        )
+        XCTAssertEqual(geometry.shaftEnd.x, geometry.headBaseLeading.x, accuracy: 0.001)
+        XCTAssertEqual(geometry.shaftEnd.x, geometry.headBaseTrailing.x, accuracy: 0.001)
+        XCTAssertGreaterThan(geometry.shaftEnd.x, 20)
+        XCTAssertLessThan(geometry.shaftEnd.x, 100)
+        XCTAssertEqual(abs(geometry.headBaseLeading.y - geometry.headBaseTrailing.y), 24, accuracy: 0.001)
+    }
+
     func testCropOperationChangesOutputSize() throws {
         let image = try XCTUnwrap(makeSolidImage(width: 200, height: 100, red: 255, green: 255, blue: 255))
         let result = try AnnotationRenderer.render(image: image, operations: [
