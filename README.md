@@ -21,29 +21,25 @@ Automatic synthetic scrolling, window targeting, pinning, uploads, human editor 
 
 ## Installation
 
-There is currently no `.dmg`, `.zip`, installer, or GUI app. `agentshot` is a macOS command-line tool and MCP server, so the current installation path is to build the executable from source and copy it to a stable location.
-
-Requires a macOS machine with Xcode or the Swift toolchain installed.
+`agentshot` is a macOS command-line tool and MCP server. Homebrew is the preferred installation path:
 
 ```bash
-git clone git@github.com:therealharpaljadeja/agentshot.git
-cd agentshot
-swift build -c release
-mkdir -p "$HOME/.local/bin"
-cp .build/release/agentshot "$HOME/.local/bin/agentshot"
-"$HOME/.local/bin/agentshot" doctor
+brew tap therealharpaljadeja/agentshot https://github.com/therealharpaljadeja/agentshot.git
+brew trust --tap therealharpaljadeja/agentshot
+brew install agentshot
+agentshot doctor
 ```
 
-Use the resulting absolute path in MCP configuration, for example `/Users/yourname/.local/bin/agentshot`. Do not rely on `~`, `$HOME`, or PATH expansion inside agent MCP config files.
+The explicit tap URL is required because this repository is both the project repository and its own Homebrew tap. Homebrew also requires third-party taps to be explicitly trusted before their formulae can be installed. The formula installs a prebuilt universal macOS binary supporting Apple silicon and Intel Macs running macOS 14 Sonoma or newer.
 
-For a system-wide install instead:
+Homebrew installs the executable at `$(brew --prefix)/bin/agentshot`:
 
-```bash
-sudo cp .build/release/agentshot /usr/local/bin/agentshot
-/usr/local/bin/agentshot doctor
-```
+- Apple silicon: usually `/opt/homebrew/bin/agentshot`
+- Intel: usually `/usr/local/bin/agentshot`
 
-A `.dmg` is not a natural fit because there is no GUI `.app` to drag into Applications. A downloadable zip/Homebrew formula can be added later if we decide to distribute signed binaries; building locally is currently the reliable path. See [docs/agent-integration.md](docs/agent-integration.md) for detailed agent-specific setup.
+Use the fully expanded absolute path in MCP configuration. Do not rely on `~`, `$HOME`, or PATH expansion inside agent MCP config files.
+
+There is no `.dmg` or GUI app because there is no GUI `.app` to drag into Applications. To build from source instead, see [docs/agent-integration.md](docs/agent-integration.md) for detailed agent-specific setup and the manual build path.
 
 ## Build and test
 

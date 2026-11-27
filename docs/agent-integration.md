@@ -21,40 +21,47 @@ This guide shows how to connect `agentshot` to coding agents through MCP, and ho
 
 Important model of scrolling capture: **agentshot does not scroll the screen**. The calling agent scrolls using its own browser/computer-control mechanism, then calls `scroll_capture_add_frame` after each scroll. `agentshot` captures and stitches the frames.
 
-## 2. Build and install once on macOS
+## 2. Install once on macOS
 
-There is currently no `.dmg`, `.zip`, installer, or GUI app. `agentshot` is distributed as source and installed as a local command-line binary. A `.dmg` would mainly make sense for a GUI `.app`; this project is currently a CLI/MCP server.
+There is no `.dmg` or GUI app. `agentshot` is a CLI/MCP server, so Homebrew is the preferred installation path:
 
-Clone and build a release binary:
+```bash
+brew tap therealharpaljadeja/agentshot https://github.com/therealharpaljadeja/agentshot.git
+brew trust --tap therealharpaljadeja/agentshot
+brew install agentshot
+```
+
+The explicit tap URL is required because this repository is both the project repository and its own Homebrew tap. Homebrew also requires third-party taps to be explicitly trusted before their formulae can be installed. The formula installs a prebuilt universal macOS binary supporting Apple silicon and Intel Macs running macOS 14 Sonoma or newer.
+
+Homebrew installs the executable at `$(brew --prefix)/bin/agentshot`:
+
+- Apple silicon: usually `/opt/homebrew/bin/agentshot`
+- Intel: usually `/usr/local/bin/agentshot`
+
+The examples in this guide use `/opt/homebrew/bin/agentshot`. If your machine uses a different Homebrew prefix, substitute the fully expanded output of:
+
+```bash
+brew --prefix
+```
+
+To build manually instead:
 
 ```bash
 git clone git@github.com:therealharpaljadeja/agentshot.git
 cd agentshot
 swift build -c release
-```
-
-Install it somewhere stable. The examples in this guide use `/usr/local/bin/agentshot`:
-
-```bash
-sudo cp .build/release/agentshot /usr/local/bin/agentshot
-sudo chmod 755 /usr/local/bin/agentshot
-```
-
-If you do not want to use `sudo`, install into your home directory instead:
-
-```bash
 mkdir -p "$HOME/.local/bin"
 cp .build/release/agentshot "$HOME/.local/bin/agentshot"
 ```
 
-Then use the expanded absolute path in every MCP configuration, for example `/Users/yourname/.local/bin/agentshot`.
+Then use the expanded absolute path in every MCP configuration.
 
 **Do not rely on `~`, `$HOME`, or PATH expansion in MCP config files.** Most MCP clients launch the command directly rather than through a shell. Prefer a fully expanded absolute path.
 
 Verify the binary:
 
 ```bash
-/usr/local/bin/agentshot doctor
+/opt/homebrew/bin/agentshot doctor
 ```
 
 Expected shape:
@@ -76,7 +83,7 @@ Verify the MCP server handshake directly:
 
 ```bash
 printf '%s\n' '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05"}}' \
-  | /usr/local/bin/agentshot mcp
+  | /opt/homebrew/bin/agentshot mcp
 ```
 
 You should receive one line of JSON containing `serverInfo.name: agentshot`.
@@ -92,7 +99,7 @@ macOS Screen Recording permission is often granted to the **host application** t
 
 If capture fails with `missing-screen-recording-permission`:
 
-1. Run the agent's `doctor` tool or ask the agent to run `/usr/local/bin/agentshot doctor`.
+1. Run the agent's `doctor` tool or ask the agent to run `/opt/homebrew/bin/agentshot doctor`.
 2. Open **System Settings → Privacy & Security → Screen Recording**.
 3. Enable the host application named in the failure context: Terminal, iTerm, Cursor, Visual Studio Code, or the relevant agent host.
 4. Restart that host application.
@@ -141,7 +148,7 @@ Run this in a terminal, not inside a Claude conversation:
 
 ```bash
 claude mcp add --transport stdio --scope user agentshot \
-  -- /usr/local/bin/agentshot mcp
+  -- /opt/homebrew/bin/agentshot mcp
 ```
 
 The `--` separator is important: everything after it is passed to the server command.
@@ -193,7 +200,7 @@ Codex CLI and the Codex IDE extension share MCP configuration in `~/.codex/confi
 ### Install with the Codex CLI
 
 ```bash
-codex mcp add agentshot -- /usr/local/bin/agentshot mcp
+codex mcp add agentshot -- /opt/homebrew/bin/agentshot mcp
 ```
 
 Verify:
@@ -209,7 +216,7 @@ Add this to `~/.codex/config.toml`:
 
 ```toml
 [mcp_servers.agentshot]
-command = "/usr/local/bin/agentshot"
+command = "/opt/homebrew/bin/agentshot"
 args = ["mcp"]
 ```
 
@@ -245,7 +252,7 @@ Create or edit `~/.cursor/mcp.json`:
 {
   "mcpServers": {
     "agentshot": {
-      "command": "/usr/local/bin/agentshot",
+      "command": "/opt/homebrew/bin/agentshot",
       "args": ["mcp"]
     }
   }
@@ -292,7 +299,7 @@ There are two different cases.
 Use the Devin CLI:
 
 ```bash
-devin mcp add --scope user agentshot -- /usr/local/bin/agentshot mcp
+devin mcp add --scope user agentshot -- /opt/homebrew/bin/agentshot mcp
 devin mcp list
 ```
 
@@ -302,7 +309,7 @@ Or edit `~/.config/devin/mcp_config.json`:
 {
   "mcpServers": {
     "agentshot": {
-      "command": "/usr/local/bin/agentshot",
+      "command": "/opt/homebrew/bin/agentshot",
       "args": ["mcp"]
     }
   }
@@ -321,7 +328,7 @@ Use agentshot doctor, then capture the current display to /tmp/devin-screen.png.
 
 A normal Devin cloud session runs in a cloud VM, not on your Mac. In that environment:
 
-- `/usr/local/bin/agentshot` usually does not exist.
+- `/opt/homebrew/bin/agentshot` usually does not exist.
 - The VM may be Linux, while agentshot is macOS-only.
 - Even if the command existed, it would capture the cloud VM's screen, not your Mac's screen.
 
@@ -332,7 +339,7 @@ If you do operate macOS workers, the custom MCP server shape is:
 ```json
 {
   "transport": "STDIO",
-  "command": "/usr/local/bin/agentshot",
+  "command": "/opt/homebrew/bin/agentshot",
   "args": ["mcp"],
   "env_variables": {}
 }
@@ -352,7 +359,7 @@ Add or merge:
 {
   "mcpServers": {
     "agentshot": {
-      "command": "/usr/local/bin/agentshot",
+      "command": "/opt/homebrew/bin/agentshot",
       "args": ["mcp"],
       "trust": false
     }
@@ -380,7 +387,7 @@ Windsurf's current local agent uses the Devin-style MCP configuration. Edit `~/.
 {
   "mcpServers": {
     "agentshot": {
-      "command": "/usr/local/bin/agentshot",
+      "command": "/opt/homebrew/bin/agentshot",
       "args": ["mcp"]
     }
   }
@@ -406,7 +413,7 @@ Cline supports an interactive MCP wizard and a CLI install form.
 From a terminal:
 
 ```bash
-cline mcp install agentshot -- /usr/local/bin/agentshot mcp
+cline mcp install agentshot -- /opt/homebrew/bin/agentshot mcp
 ```
 
 Alternatively, open Cline's MCP settings JSON and add:
@@ -415,7 +422,7 @@ Alternatively, open Cline's MCP settings JSON and add:
 {
   "mcpServers": {
     "agentshot": {
-      "command": "/usr/local/bin/agentshot",
+      "command": "/opt/homebrew/bin/agentshot",
       "args": ["mcp"]
     }
   }
@@ -440,7 +447,7 @@ Current VS Code Copilot MCP configuration uses a top-level `mcpServers` object. 
 {
   "mcpServers": {
     "agentshot": {
-      "command": "/usr/local/bin/agentshot",
+      "command": "/opt/homebrew/bin/agentshot",
       "args": ["mcp"]
     }
   }
@@ -455,7 +462,7 @@ The guided route is often safer:
 2. Run **Chat: Open Customizations**.
 3. Select **MCP Servers**.
 4. Choose **Add Server**.
-5. Use command `/usr/local/bin/agentshot` with argument `mcp`.
+5. Use command `/opt/homebrew/bin/agentshot` with argument `mcp`.
 6. Save it to the Copilot global destination.
 
 Older VS Code/Copilot documentation may mention `.vscode/mcp.json` with a top-level `servers` object. That is a legacy editor-managed format; prefer the current Copilot configuration flow when available.
@@ -470,7 +477,7 @@ JSON shape:
 {
   "mcpServers": {
     "agentshot": {
-      "command": "/usr/local/bin/agentshot",
+      "command": "/opt/homebrew/bin/agentshot",
       "args": ["mcp"]
     }
   }
@@ -481,14 +488,14 @@ TOML shape:
 
 ```toml
 [mcp_servers.agentshot]
-command = "/usr/local/bin/agentshot"
+command = "/opt/homebrew/bin/agentshot"
 args = ["mcp"]
 ```
 
 If the agent has an add-server command, the common pattern is:
 
 ```bash
-<agent-cli> mcp add agentshot -- /usr/local/bin/agentshot mcp
+<agent-cli> mcp add agentshot -- /opt/homebrew/bin/agentshot mcp
 ```
 
 Check that the client expects stdio. agentshot currently does not expose HTTP or SSE.
@@ -500,8 +507,8 @@ Almost every coding agent can run shell commands even when it cannot use MCP. In
 Capture:
 
 ```bash
-/usr/local/bin/agentshot capture fullscreen --out /tmp/full.png
-/usr/local/bin/agentshot capture area --rect 100,200,800,600 --out /tmp/area.png
+/opt/homebrew/bin/agentshot capture fullscreen --out /tmp/full.png
+/opt/homebrew/bin/agentshot capture area --rect 100,200,800,600 --out /tmp/area.png
 ```
 
 Annotate:
@@ -514,13 +521,13 @@ cat > /tmp/ops.json <<'JSON'
   {"type":"counter","at":[580,220]}
 ]
 JSON
-/usr/local/bin/agentshot annotate /tmp/area.png --ops /tmp/ops.json --out /tmp/annotated.png
+/opt/homebrew/bin/agentshot annotate /tmp/area.png --ops /tmp/ops.json --out /tmp/annotated.png
 ```
 
 Redact:
 
 ```bash
-/usr/local/bin/agentshot redact /tmp/annotated.png \
+/opt/homebrew/bin/agentshot redact /tmp/annotated.png \
   --regex 'sk-[A-Za-z0-9_-]+' \
   --method blur \
   --out /tmp/safe.png
@@ -529,7 +536,7 @@ Redact:
 Beautify:
 
 ```bash
-/usr/local/bin/agentshot beautify /tmp/safe.png \
+/opt/homebrew/bin/agentshot beautify /tmp/safe.png \
   --out /tmp/final.png \
   --padding 64 \
   --radius 24 \
@@ -540,13 +547,13 @@ Beautify:
 Scrolling capture:
 
 ```bash
-/usr/local/bin/agentshot scrollcap start --rect 0,120,1600,980 --session demo
-/usr/local/bin/agentshot scrollcap frame --session demo
+/opt/homebrew/bin/agentshot scrollcap start --rect 0,120,1600,980 --session demo
+/opt/homebrew/bin/agentshot scrollcap frame --session demo
 # The agent or user scrolls down here.
-/usr/local/bin/agentshot scrollcap frame --session demo
+/opt/homebrew/bin/agentshot scrollcap frame --session demo
 # The agent or user scrolls down again.
-/usr/local/bin/agentshot scrollcap frame --session demo
-/usr/local/bin/agentshot scrollcap finish --session demo --out /tmp/tall.png
+/opt/homebrew/bin/agentshot scrollcap frame --session demo
+/opt/homebrew/bin/agentshot scrollcap finish --session demo --out /tmp/tall.png
 ```
 
 ## 15. Recommended agent workflows
@@ -600,7 +607,7 @@ rm -rf "$HOME/.agentshot/sessions/demo"
 |---|---|---|
 | `missing-screen-recording-permission` | Host app lacks macOS permission | Grant Screen Recording to Terminal/iTerm/Cursor/VS Code/agent host, restart host |
 | `capture-timeout` | Display asleep, permission problem, or no frame delivered | Wake display, verify `doctor`, retry; if persistent, capture fullscreen once and compare |
-| MCP server does not appear | Config path wrong or command path not absolute | Verify config file location, use `/usr/local/bin/agentshot`, restart agent |
+| MCP server does not appear | Config path wrong or command path not absolute | Verify config file location, use `/opt/homebrew/bin/agentshot`, restart agent |
 | `command not found` in agent | PATH differs or `~` was not expanded | Use fully expanded absolute path |
 | `session-exists` | Previous scrolling session was not cleaned up | Finish it or delete `~/.agentshot/sessions/<id>` |
 | Stitch warnings or gaps | Scrolled too far, lazy loading, animation, sticky headers | Scroll smaller increments, wait after scrolling, retry capture |
