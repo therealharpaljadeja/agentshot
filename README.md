@@ -30,7 +30,7 @@ brew install agentshot
 agentshot doctor
 ```
 
-The explicit tap URL is required because this repository is both the project repository and its own Homebrew tap. Homebrew also requires third-party taps to be explicitly trusted before their formulae can be installed. The formula installs a prebuilt universal macOS binary supporting Apple silicon and Intel Macs running macOS 14 Sonoma or newer.
+The explicit tap URL is required because this repository is both the project repository and its own Homebrew tap. Homebrew also requires third-party taps to be explicitly trusted before their packages can be installed. The cask installs a prebuilt universal macOS binary supporting Apple silicon and Intel Macs running macOS 14 Sonoma or newer, so Xcode and Command Line Tools are not required.
 
 Homebrew installs the executable at `$(brew --prefix)/bin/agentshot`:
 
