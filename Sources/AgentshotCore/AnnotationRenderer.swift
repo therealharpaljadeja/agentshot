@@ -30,8 +30,8 @@ func arrowGeometry(from start: CGPoint, to end: CGPoint, strokeWidth: CGFloat) -
     let length = max(1, hypot(dx, dy))
     let ux = dx / length
     let uy = dy / length
-    let headLength = min(max(14, strokeWidth * 3), max(8, length * 0.8))
-    let headAngle = CGFloat.pi / 6
+    let headLength = min(max(18, strokeWidth * 5.2), max(10, length * 0.8))
+    let headAngle = CGFloat.pi * 22 / 180
     let baseDistance = headLength * cos(headAngle)
     let baseCenter = CGPoint(x: end.x - ux * baseDistance, y: end.y - uy * baseDistance)
     let shaftDistance = max(0, length - baseDistance)
@@ -128,7 +128,7 @@ public enum AnnotationRenderer {
                 let start = topLeftPointToCG(from, imageHeight: imageHeight)
                 let end = topLeftPointToCG(to, imageHeight: imageHeight)
                 let color = colorFromHex(operation["stroke"] as? String, fallback: .systemRed)
-                let width = CGFloat(number(operation["strokeWidth"]) ?? 6)
+                let width = CGFloat(number(operation["strokeWidth"]) ?? 8)
                 let geometry = arrowGeometry(from: start, to: end, strokeWidth: width)
                 context.setStrokeColor(cgColor(color))
                 context.setFillColor(cgColor(color))

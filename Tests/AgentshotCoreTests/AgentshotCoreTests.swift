@@ -40,7 +40,7 @@ final class AgentshotCoreTests: XCTestCase {
         XCTAssertEqual(geometry.shaftEnd.x, geometry.headBaseTrailing.x, accuracy: 0.001)
         XCTAssertGreaterThan(geometry.shaftEnd.x, 20)
         XCTAssertLessThan(geometry.shaftEnd.x, 100)
-        XCTAssertEqual(abs(geometry.headBaseLeading.y - geometry.headBaseTrailing.y), 24, accuracy: 0.001)
+        XCTAssertEqual(abs(geometry.headBaseLeading.y - geometry.headBaseTrailing.y), 31.16726857220388, accuracy: 0.001)
     }
 
     func testCropOperationChangesOutputSize() throws {

@@ -86,7 +86,7 @@ agentshot annotate area.png --ops ops.json --out annotated.png
 ```json
 [
   { "type": "rect", "rect": [40, 100, 420, 90], "stroke": "#ff3b30", "strokeWidth": 4 },
-  { "type": "arrow", "from": [640, 240], "to": [460, 145], "stroke": "#ff3b30", "strokeWidth": 6 },
+  { "type": "arrow", "from": [640, 240], "to": [460, 145], "stroke": "#ff3b30", "strokeWidth": 8 },
   { "type": "text", "at": [80, 360], "text": "Sensitive value" },
   { "type": "highlight", "rect": [42, 104, 160, 24] },
   { "type": "counter", "at": [100, 420] },
@@ -94,7 +94,7 @@ agentshot annotate area.png --ops ops.json --out annotated.png
 ]
 ```
 
-Annotation coordinates are top-left image pixels. Arrows do not need angles; direction is derived from `from` and `to`. Counters auto-number in operation order.
+Annotation coordinates are top-left image pixels. Arrows do not need angles; direction is derived from `from` and `to`. Arrowheads scale with `strokeWidth`; use roughly `8`–`12` for prominent Shottr-style arrows on typical screenshots. Counters auto-number in operation order.
 
 A crop operation can be included:
 
