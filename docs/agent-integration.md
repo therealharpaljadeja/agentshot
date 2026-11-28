@@ -126,7 +126,7 @@ Example annotation operation array:
 ```json
 [
   { "type": "rect", "rect": [40, 100, 420, 90], "stroke": "#ff3b30", "strokeWidth": 4 },
-  { "type": "arrow", "from": [640, 240], "to": [460, 145], "stroke": "#ff3b30", "strokeWidth": 6 },
+  { "type": "arrow", "from": [640, 240], "to": [460, 145], "stroke": "#ff3b30", "strokeWidth": 8 },
   { "type": "highlight", "rect": [42, 104, 160, 24], "color": "#ffeb3b", "opacity": 0.45 },
   { "type": "text", "at": [80, 360], "text": "Check this value" },
   { "type": "counter", "at": [100, 420] },
